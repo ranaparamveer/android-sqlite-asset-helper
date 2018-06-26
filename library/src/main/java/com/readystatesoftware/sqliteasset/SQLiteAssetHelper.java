@@ -556,9 +556,7 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
             b = end;
         }
 
-        if (a < baseVersion) {
-            return;
-        } else {
+        if (a >= baseVersion) {
             getUpgradeFilePaths(baseVersion, a, b, paths); // recursive call
         }
 
