@@ -2,6 +2,7 @@ buildscript {
     repositories {
         mavenCentral()
         google()
+        jcenter()
     }
     dependencies {
         classpath "com.android.tools.build:gradle:$build_tools_version"
@@ -12,6 +13,7 @@ apply plugin: 'com.android.application'
 repositories {
     mavenCentral()
     google()
+    jcenter()
 }
 
 android {
