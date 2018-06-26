@@ -23,31 +23,33 @@ import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.zip.ZipInputStream;
 
 /**
- * A helper class to manage database creation and version management using 
+ * A helper class to manage database creation and version management using
  * an application's raw asset files.
- *
- * This class provides developers with a simple way to ship their Android app 
- * with an existing SQLite database (which may be pre-populated with data) and 
- * to manage its initial creation and any upgrades required with subsequent 
+ * <p>
+ * This class provides developers with a simple way to ship their Android app
+ * with an existing SQLite database (which may be pre-populated with data) and
+ * to manage its initial creation and any upgrades required with subsequent
  * version releases.
- *
+ * <p>
  * <p>This class makes it easy for {@link android.content.ContentProvider}
  * implementations to defer opening and upgrading the database until first use,
  * to avoid blocking application startup with long-running database upgrades.
- *
+ * <p>
  * <p>For examples see <a href="https://github.com/jgilfelt/android-sqlite-asset-helper">
  * https://github.com/jgilfelt/android-sqlite-asset-helper</a>
- *
+ * <p>
  * <p class="note"><strong>Note:</strong> this class assumes
  * monotonically increasing version numbers for upgrades.  Also, there
  * is no concept of a database downgrade; installing a new version of
@@ -76,20 +78,20 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
     private int mForcedUpgradeVersion = 0;
 
     /**
-     * Create a helper object to create, open, and/or manage a database in 
+     * Create a helper object to create, open, and/or manage a database in
      * a specified location.
      * This method always returns very quickly.  The database is not actually
      * created or opened until one of {@link #getWritableDatabase} or
      * {@link #getReadableDatabase} is called.
      *
-     * @param context to use to open or create the database
-     * @param name of the database file
+     * @param context          to use to open or create the database
+     * @param name             of the database file
      * @param storageDirectory to store the database file upon creation; caller must
-     *     ensure that the specified absolute path is available and can be written to  
-     * @param factory to use for creating cursor objects, or null for the default
-     * @param version number of the database (starting at 1); if the database is older,
-     *     SQL file(s) contained within the application assets folder will be used to 
-     *     upgrade the database
+     *                         ensure that the specified absolute path is available and can be written to
+     * @param factory          to use for creating cursor objects, or null for the default
+     * @param version          number of the database (starting at 1); if the database is older,
+     *                         SQL file(s) contained within the application assets folder will be used to
+     *                         upgrade the database
      */
     public SQLiteAssetHelper(Context context, String name, String storageDirectory, CursorFactory factory, int version) {
         super(context, name, factory, version);
@@ -112,18 +114,18 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
     }
 
     /**
-     * Create a helper object to create, open, and/or manage a database in 
+     * Create a helper object to create, open, and/or manage a database in
      * the application's default private data directory.
      * This method always returns very quickly.  The database is not actually
      * created or opened until one of {@link #getWritableDatabase} or
      * {@link #getReadableDatabase} is called.
      *
      * @param context to use to open or create the database
-     * @param name of the database file
+     * @param name    of the database file
      * @param factory to use for creating cursor objects, or null for the default
      * @param version number of the database (starting at 1); if the database is older,
-     *     SQL file(s) contained within the application assets folder will be used to 
-     *     upgrade the database
+     *                SQL file(s) contained within the application assets folder will be used to
+     *                upgrade the database
      */
     public SQLiteAssetHelper(Context context, String name, CursorFactory factory, int version) {
         this(context, name, null, factory, version);
@@ -133,19 +135,19 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
      * Create and/or open a database that will be used for reading and writing.
      * The first time this is called, the database will be extracted and copied
      * from the application's assets folder.
-     *
+     * <p>
      * <p>Once opened successfully, the database is cached, so you can
      * call this method every time you need to write to the database.
      * (Make sure to call {@link #close} when you no longer need the database.)
      * Errors such as bad permissions or a full disk may cause this method
      * to fail, but future attempts may succeed if the problem is fixed.</p>
-     *
+     * <p>
      * <p class="caution">Database upgrade may take a long time, you
      * should not call this method from the application main thread, including
      * from {@link android.content.ContentProvider#onCreate ContentProvider.onCreate()}.
      *
-     * @throws SQLiteException if the database cannot be opened for writing
      * @return a read/write database object valid until {@link #close} is called
+     * @throws SQLiteException if the database cannot be opened for writing
      */
     @Override
     public synchronized SQLiteDatabase getWritableDatabase() {
@@ -179,9 +181,11 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
 
             // do force upgrade
             if (version != 0 && version < mForcedUpgradeVersion) {
+                db.close();
                 db = createOrOpenDatabase(true);
-                db.setVersion(mNewVersion);
                 version = db.getVersion();
+                if (version != mNewVersion)
+                    Log.w(TAG, "Forced Upgrade got " + version + ", now an upgrade to " + mNewVersion + " is required");
             }
 
             if (version != mNewVersion) {
@@ -210,7 +214,10 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
             mIsInitializing = false;
             if (success) {
                 if (mDatabase != null) {
-                    try { mDatabase.close(); } catch (Exception e) { }
+                    try {
+                        mDatabase.close();
+                    } catch (Exception e) {
+                    }
                     //mDatabase.unlock();
                 }
                 mDatabase = db;
@@ -230,15 +237,15 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
      * to {@link #getWritableDatabase} may succeed, in which case the read-only
      * database object will be closed and the read/write object will be returned
      * in the future.
-     *
+     * <p>
      * <p class="caution">Like {@link #getWritableDatabase}, this method may
      * take a long time to return, so you should not call it from the
      * application main thread, including from
      * {@link android.content.ContentProvider#onCreate ContentProvider.onCreate()}.
      *
-     * @throws SQLiteException if the database cannot be opened
      * @return a database object valid until {@link #getWritableDatabase}
-     *     or {@link #close} is called.
+     * or {@link #close} is called.
+     * @throws SQLiteException if the database cannot be opened
      */
     @Override
     public synchronized SQLiteDatabase getReadableDatabase() {
@@ -288,6 +295,7 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
             mDatabase.close();
             mDatabase = null;
         }
+        super.close();
     }
 
     @Override
@@ -307,7 +315,7 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
         Log.w(TAG, "Upgrading database " + mName + " from version " + oldVersion + " to " + newVersion + "...");
 
         ArrayList<String> paths = new ArrayList<String>();
-        getUpgradeFilePaths(oldVersion, newVersion-1, newVersion, paths);
+        getUpgradeFilePaths(oldVersion, newVersion - 1, newVersion, paths);
 
         if (paths.isEmpty()) {
             Log.e(TAG, "no upgrade script path from " + oldVersion + " to " + newVersion);
@@ -349,7 +357,6 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
      *
      * @param version bypass upgrade up to this version number - should never be greater than the
      *                latest database version.
-     *
      * @deprecated use {@link #setForcedUpgrade} instead.
      */
     @Deprecated
@@ -376,12 +383,21 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
         setForcedUpgrade(mNewVersion);
     }
 
+    /**
+     * Returns the full database path. Useful when attaching other databases
+     *
+     * @return Full Database Path
+     */
+    public String getDatabasePath() {
+        return mDatabasePath + "/" + mName;
+    }
+
     private SQLiteDatabase createOrOpenDatabase(boolean force) throws SQLiteAssetException {
 
         // test for the existence of the db file first and don't attempt open
         // to prevent the error trace in log on API 14+
         SQLiteDatabase db = null;
-        File file = new File (mDatabasePath + "/" + mName);
+        File file = new File(getDatabasePath());
         if (file.exists()) {
             db = returnDatabase();
         }
@@ -391,6 +407,7 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
             // database already exists
             if (force) {
                 Log.w(TAG, "forcing database upgrade!");
+                db.close();
                 copyDatabaseFromAssets();
                 db = returnDatabase();
             }
@@ -403,9 +420,9 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
         }
     }
 
-    private SQLiteDatabase returnDatabase(){
+    private SQLiteDatabase returnDatabase() {
         try {
-            SQLiteDatabase db = SQLiteDatabase.openDatabase(mDatabasePath + "/" + mName, mFactory, SQLiteDatabase.OPEN_READWRITE);
+            SQLiteDatabase db = SQLiteDatabase.openDatabase(getDatabasePath(), mFactory, SQLiteDatabase.OPEN_READWRITE);
             Log.i(TAG, "successfully opened database " + mName);
             return db;
         } catch (SQLiteException e) {
@@ -418,7 +435,7 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
         Log.w(TAG, "copying database from assets...");
 
         String path = mAssetPath;
-        String dest = mDatabasePath + "/" + mName;
+        String dest = getDatabasePath();
         InputStream is;
         boolean isZip = false;
 
@@ -444,15 +461,25 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
 
         try {
             File f = new File(mDatabasePath + "/");
-            if (!f.exists()) { f.mkdir(); }
+            if (!f.exists()) {
+                f.mkdir();
+            }
             if (isZip) {
                 ZipInputStream zis = Utils.getFileFromZip(is);
                 if (zis == null) {
                     throw new SQLiteAssetException("Archive is missing a SQLite database file");
                 }
-                Utils.writeExtractedFileToDisk(zis, new FileOutputStream(dest));
+                if (path.endsWith(".sql") || path.endsWith(".SQL")) {
+                    createDatabaseFromSqlInputStream(zis, dest);
+                } else {
+                    Utils.writeExtractedFileToDisk(zis, new FileOutputStream(dest));
+                }
             } else {
-                Utils.writeExtractedFileToDisk(is, new FileOutputStream(dest));
+                if (path.endsWith(".sql") || path.endsWith(".SQL")) {
+                    createDatabaseFromSqlInputStream(is, dest);
+                } else {
+                    Utils.writeExtractedFileToDisk(is, new FileOutputStream(dest));
+                }
             }
 
             Log.w(TAG, "database copy complete");
@@ -463,6 +490,43 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
             throw se;
         }
     }
+
+    /**
+     * Is used to create the database from a ddl-script ie. if the name ends with '.sql'
+     * ignores lines starting with '--', if present removes any trailing ';'
+     *
+     * @param is       stream to read the sql from
+     * @param destPath the destination file to create the database in
+     * @throws IOException     if reading the input stream caused an error
+     * @throws SQLiteException if the database could not be created
+     */
+    protected void createDatabaseFromSqlInputStream(InputStream is, String destPath) throws IOException, SQLiteException {
+        SQLiteDatabase db = null;
+        try {
+            db = SQLiteDatabase.openOrCreateDatabase(destPath, mFactory);
+            db.beginTransaction();
+            BufferedReader in = new BufferedReader(new InputStreamReader(is));
+            String cmd = in.readLine();
+            while (cmd != null) {
+                cmd = cmd.trim();
+                if (cmd.startsWith("--") || cmd.length() == 0) {
+                    continue;
+                }
+                if (cmd.charAt(cmd.length() - 1) == ';') {
+                    cmd = cmd.substring(0, cmd.length() - 1);
+                }
+                db.execSQL(cmd);
+                cmd = in.readLine();
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            if (db != null) {
+                db.endTransaction();
+                db.close();
+            }
+        }
+    }
+
 
     private InputStream getUpgradeSQLStream(int oldVersion, int newVersion) {
         String path = String.format(mUpgradePathFormat, oldVersion, newVersion);
@@ -506,7 +570,8 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
     @SuppressWarnings("serial")
     public static class SQLiteAssetException extends SQLiteException {
 
-        public SQLiteAssetException() {}
+        public SQLiteAssetException() {
+        }
 
         public SQLiteAssetException(String error) {
             super(error);

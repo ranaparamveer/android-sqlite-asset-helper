@@ -20,9 +20,20 @@ class Utils {
         StringBuilder sb = new StringBuilder();
         boolean inLiteral = false;
         char[] content = script.toCharArray();
+        int openDelimiter = -1, lastCharacter = -1;
+
         for (int i = 0; i < script.length(); i++) {
-            if (content[i] == '"') {
-                inLiteral = !inLiteral;
+            if (content[i] == '"' || content[i] == '\'') {
+                if (openDelimiter == -1) {
+                    // We were not inside a literal; store the delimiter's value.
+                    openDelimiter = content[i];
+                    inLiteral = true;
+                } else if (openDelimiter == content[i] && lastCharacter != '\\') {
+                    // We exit from the literal only on the same character
+                    // AND unless we're being escaped by a backslash.
+                    inLiteral = false;
+                    openDelimiter = -1;
+                }
             }
             if (content[i] == delim && !inLiteral) {
                 if (sb.length() > 0) {
@@ -32,6 +43,12 @@ class Utils {
             } else {
                 sb.append(content[i]);
             }
+            if (lastCharacter == '\\' && content[i] == '\\') {
+                // It was an escaped backslash, don't accumulate.
+                lastCharacter = -1;
+            } else {
+                lastCharacter = content[i];
+            }
         }
         if (sb.length() > 0) {
             statements.add(sb.toString().trim());
@@ -39,10 +56,11 @@ class Utils {
         return statements;
     }
 
-    public static void writeExtractedFileToDisk(InputStream in, OutputStream outs) throws IOException {
+    public static void writeExtractedFileToDisk(InputStream in, OutputStream outs) throws
+            IOException {
         byte[] buffer = new byte[1024];
         int length;
-        while ((length = in.read(buffer))>0){
+        while ((length = in.read(buffer)) > 0) {
             outs.write(buffer, 0, length);
         }
         outs.flush();
@@ -61,7 +79,9 @@ class Utils {
     }
 
     public static String convertStreamToString(InputStream is) {
-        return new Scanner(is).useDelimiter("\\A").next();
+        try (Scanner scanner = new Scanner(is)) {
+            return scanner.useDelimiter("\\A").next();
+        }
     }
 
 }
