@@ -1,4 +1,6 @@
-### THIS PROJECT IS NO LONGER MAINTAINED
+### THIS PROJECT IS NO LONGER MAINTAINED(By Original Contributor)
+
+### However i'll be maintaining the project and the project is open to changes as required. Please report issues here.
 
 Android SQLiteAssetHelper
 =========================
@@ -20,7 +22,7 @@ If you are using the Gradle build system, simply add the following dependency in
 
 ```groovy
 dependencies {
-    compile 'com.readystatesoftware.sqliteasset:sqliteassethelper:+'
+    implementation 'com.github.ranaparamveer:android-sqlite-asset-helper:v2.0.4'
 }
 ```
 
