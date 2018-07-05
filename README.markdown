@@ -27,9 +27,10 @@ dependencies {
 ```
 
 
-And add : maven { url 'https://jitpack.io' } to project level gradle file under allprojects as:
+And add : **maven { url 'https://jitpack.io' }** to project level gradle file under allprojects as:
 
 
+```
 allprojects {
     repositories {
         google()
@@ -37,7 +38,7 @@ allprojects {
         maven { url 'https://jitpack.io' }
     }
 }
-
+```
 
 #### Ant/Eclipse
 
