@@ -26,6 +26,19 @@ dependencies {
 }
 ```
 
+
+And add : maven { url 'https://jitpack.io' } to project level gradle file under allprojects as:
+
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+
 #### Ant/Eclipse
 
 If you are using the old build system, download the latest library [JAR][1] and put it in your project's `libs` folder.
