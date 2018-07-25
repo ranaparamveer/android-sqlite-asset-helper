@@ -17,6 +17,7 @@
 package com.readystatesoftware.sqliteasset;
 
 import android.content.Context;
+import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteException;
@@ -76,6 +77,7 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
     private String mUpgradePathFormat;
 
     private int mForcedUpgradeVersion = 0;
+    private boolean createNewIfNotExist;
 
     /**
      * Create a helper object to create, open, and/or manage a database in
@@ -376,6 +378,16 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
     }
 
     /**
+     * This method is useful when db is not present even in assets
+     * @param createNewIfNotExist true to createNew else getWritable database throws exception if
+     *                            database files are not present in assets or in application data
+     *                            directory
+     */
+    public void setCreateNewIfNotExist(boolean createNewIfNotExist) {
+        this.createNewIfNotExist = createNewIfNotExist;
+    }
+
+    /**
      * Bypass the upgrade process for every version increment and simply overwrite the existing
      * database with the supplied asset file.
      */
@@ -392,6 +404,11 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
         return mDatabasePath + "/" + mName;
     }
 
+    /**
+     * @param force Force creation of database by copying from assets
+     * @return instance of newly created database
+     * @throws SQLiteAssetException this exception is thrown if couldn't open database from assets
+     */
     private SQLiteDatabase createOrOpenDatabase(boolean force) throws SQLiteAssetException {
 
         // test for the existence of the db file first and don't attempt open
@@ -421,14 +438,19 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
     }
 
     private SQLiteDatabase returnDatabase() {
-        try {
-            SQLiteDatabase db = SQLiteDatabase.openDatabase(getDatabasePath(), mFactory, SQLiteDatabase.OPEN_READWRITE);
+        SQLiteDatabase db = null;
+        if (createNewIfNotExist) {
+            db = SQLiteDatabase.openOrCreateDatabase(getDatabasePath(), mFactory, new DatabaseErrorHandler() {
+                @Override
+                public void onCorruption(SQLiteDatabase sqLiteDatabase) {
+                    Log.i(TAG, "database corrupted " + sqLiteDatabase.getPath());
+                }
+            });
             Log.i(TAG, "successfully opened database " + mName);
-            return db;
-        } catch (SQLiteException e) {
-            Log.w(TAG, "could not open database " + mName + " - " + e.getMessage());
-            return null;
+        } else {
+            db = SQLiteDatabase.openDatabase(getDatabasePath(), mFactory, SQLiteDatabase.OPEN_READWRITE);
         }
+        return db;
     }
 
     private void copyDatabaseFromAssets() throws SQLiteAssetException {
