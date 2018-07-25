@@ -22,7 +22,7 @@ If you are using the Gradle build system, simply add the following dependency in
 
 ```groovy
 dependencies {
-    implementation 'com.github.ranaparamveer:android-sqlite-asset-helper:v2.0.5'
+    implementation 'com.github.ranaparamveer:android-sqlite-asset-helper:v2.0.6'
 }
 ```
 

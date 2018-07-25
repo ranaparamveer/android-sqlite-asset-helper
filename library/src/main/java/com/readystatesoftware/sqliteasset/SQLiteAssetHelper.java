@@ -413,12 +413,7 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
 
         // test for the existence of the db file first and don't attempt open
         // to prevent the error trace in log on API 14+
-        SQLiteDatabase db = null;
-        File file = new File(getDatabasePath());
-        if (file.exists()) {
-            db = returnDatabase();
-        }
-        //SQLiteDatabase db = returnDatabase();
+        SQLiteDatabase db = returnDatabase();
 
         if (db != null) {
             // database already exists
@@ -439,7 +434,11 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
 
     private SQLiteDatabase returnDatabase() {
         SQLiteDatabase db = null;
-        if (createNewIfNotExist) {
+        File file = new File(getDatabasePath());
+        if (file.exists()) {
+            Log.i(TAG, "successfully opened database " + mName);
+            db = SQLiteDatabase.openDatabase(getDatabasePath(), mFactory, SQLiteDatabase.OPEN_READWRITE);
+        }else if (createNewIfNotExist) {
             db = SQLiteDatabase.openOrCreateDatabase(getDatabasePath(), mFactory, new DatabaseErrorHandler() {
                 @Override
                 public void onCorruption(SQLiteDatabase sqLiteDatabase) {
@@ -447,8 +446,6 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
                 }
             });
             Log.i(TAG, "successfully opened database " + mName);
-        } else {
-            db = SQLiteDatabase.openDatabase(getDatabasePath(), mFactory, SQLiteDatabase.OPEN_READWRITE);
         }
         return db;
     }
