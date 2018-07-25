@@ -439,6 +439,10 @@ public class SQLiteAssetHelper extends SQLiteOpenHelper {
             Log.i(TAG, "successfully opened database " + mName);
             db = SQLiteDatabase.openDatabase(getDatabasePath(), mFactory, SQLiteDatabase.OPEN_READWRITE);
         }else if (createNewIfNotExist) {
+            File f = new File(mDatabasePath + "/");
+            if (!f.exists()) {
+                f.mkdirs();
+            }
             db = SQLiteDatabase.openOrCreateDatabase(getDatabasePath(), mFactory, new DatabaseErrorHandler() {
                 @Override
                 public void onCorruption(SQLiteDatabase sqLiteDatabase) {
