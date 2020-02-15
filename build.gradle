@@ -10,7 +10,7 @@ buildscript {
     }
 }
 project.ext {
-    min_sdk_version = 19
+    min_sdk_version = 8
     target_sdk_version = 22
     compile_sdk_version = 27
 }
